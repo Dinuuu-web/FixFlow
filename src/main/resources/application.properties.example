@@ -1,0 +1,86 @@
+# ==============================================================================
+# FixFlow Application Properties - EXAMPLE TEMPLATE
+# ==============================================================================
+# Copy this file to application.properties and provide your configuration.
+# NEVER commit real credentials or production secrets to version control.
+# In production, prefer passing credentials via system environment variables.
+
+spring.application.name=fixflow
+
+# ============================================
+# DATABASE CONFIGURATION
+# ============================================
+# Environment variables: DB_URL, DB_USERNAME, DB_PASSWORD
+spring.datasource.url=${DB_URL:jdbc:mysql://localhost:3306/fixflow_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+spring.datasource.username=${DB_USERNAME:root}
+spring.datasource.password=${DB_PASSWORD:}
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+
+# ============================================
+# JPA / HIBERNATE CONFIGURATION
+# ============================================
+# Use 'validate' or 'none' in production; 'update' for development
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=false
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQLDialect
+spring.jpa.properties.hibernate.format_sql=true
+spring.jpa.open-in-view=false
+
+# ============================================
+# SERVER CONFIGURATION
+# ============================================
+server.port=${PORT:8080}
+server.error.include-message=never
+server.error.include-stacktrace=never
+server.error.include-exception=false
+
+# ============================================
+# THYMELEAF CONFIGURATION
+# ============================================
+spring.thymeleaf.cache=false
+spring.thymeleaf.suffix=.html
+spring.thymeleaf.prefix=classpath:/templates/
+
+# ============================================
+# FILE UPLOAD CONFIGURATION
+# ============================================
+spring.servlet.multipart.enabled=true
+spring.servlet.multipart.max-file-size=5MB
+spring.servlet.multipart.max-request-size=10MB
+app.upload.dir=uploads
+
+# ============================================
+# GEMINI AI CONFIGURATION (Optional)
+# ============================================
+# Environment variables: GEMINI_API_KEY, GEMINI_MODEL
+gemini.api.key=${GEMINI_API_KEY:}
+gemini.model=${GEMINI_MODEL:gemini-3.5-flash}
+gemini.api.url=https://generativelanguage.googleapis.com/v1beta/models/${gemini.model}:generateContent
+gemini.connect.timeout=10000
+gemini.read.timeout=30000
+gemini.max.input.length=4000
+
+# ============================================
+# OVERDUE DETECTION CONFIGURATION (hours)
+# ============================================
+app.overdue.critical.hours=4
+app.overdue.high.hours=24
+app.overdue.medium.hours=72
+app.overdue.low.hours=168
+
+# ============================================
+# COMPLAINT ID PREFIX
+# ============================================
+app.complaint.id.prefix=FF
+
+# ============================================
+# SAMPLE DATA INITIALIZER
+# ============================================
+# MUST be set to false in production to prevent seeding demo accounts
+app.init.sample-data=${APP_INIT_SAMPLE_DATA:false}
+
+# ============================================
+# LOGGING
+# ============================================
+logging.level.com.fixflow=INFO
+logging.level.org.springframework.security=WARN

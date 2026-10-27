@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head(pageTitle='Submit Complaint')}"></head>
+<body>
+<div class="layout">
+  <th:block th:replace="~{fragments/layout :: sidebar('new')}"></th:block>
+
+  <div class="main-content">
+    <th:block th:replace="~{fragments/layout :: topbar('Submit Complaint', 'Report a campus maintenance issue')}"></th:block>
+
+    <div class="page-content">
+      <!-- Duplicate Warning -->
+      <div th:if="${showDuplicateWarning}" class="alert alert-warning mb-16">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-content">
+          <div class="alert-title">Potential Duplicate Detected</div>
+          <p>We found similar unresolved complaints for this location and category:</p>
+          <ul style="margin-top:8px;padding-left:20px;">
+            <li th:each="dup : ${duplicates}">
+              <a th:href="@{/student/complaint/{id}(id=${dup.complaintId})}"
+                 th:text="${dup.complaintId + ' — ' + dup.title}">FF-1001</a>
+              <span class="badge badge-dot"
+                    th:classappend="'badge-' + ${#strings.toLowerCase(dup.status.toString())}"
+                    style="margin-left:6px;"
+                    th:text="${dup.status}">Status</span>
+            </li>
+          </ul>
+          <p style="margin-top:8px;">You can still submit a separate complaint if it describes a different issue.</p>
+        </div>
+      </div>
+
+      <div class="card" style="max-width:820px;">
+        <div class="card-header">
+          <div class="card-title">📝 New Complaint</div>
+        </div>
+        <div class="card-body">
+          <form th:action="@{/student/complaint/new}" method="post"
+                th:object="${complaintDto}" enctype="multipart/form-data">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+            <input type="hidden" name="confirmed" th:value="${showDuplicateWarning} ? 'confirmed' : ''" />
+
+            <!-- Title -->
+            <div class="form-group">
+              <label class="form-label" for="title">Complaint Title <span>*</span></label>
+              <input type="text" id="title" class="form-control"
+                     th:field="*{title}"
+                     placeholder="Brief description of the issue"
+                     maxlength="200"
+                     data-max-chars="200" data-counter="title-counter"
+                     required />
+              <div class="form-hint" id="title-counter">200 chars remaining</div>
+              <div class="form-error" th:if="${#fields.hasErrors('title')}"
+                   th:errors="*{title}">Error</div>
+            </div>
+
+            <!-- Category & Priority -->
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label class="form-label" for="category">Category <span>*</span></label>
+                <select id="category" class="form-control" th:field="*{category}" required>
+                  <option value="">Select a category</option>
+                  <option th:each="cat : ${categories}" th:value="${cat}" th:text="${cat}">Cat</option>
+                </select>
+                <div class="form-error" th:if="${#fields.hasErrors('category')}"
+                     th:errors="*{category}">Error</div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="priority">Priority <span>*</span></label>
+                <select id="priority" class="form-control" th:field="*{priority}" required>
+                  <option value="">Select priority</option>
+                  <option value="LOW">🟢 Low — Minor inconvenience</option>
+                  <option value="MEDIUM">🟡 Medium — Moderate issue</option>
+                  <option value="HIGH">🟠 High — Affects multiple users</option>
+                  <option value="CRITICAL">🔴 Critical — Safety hazard</option>
+                </select>
+                <div class="form-error" th:if="${#fields.hasErrors('priority')}"
+                     th:errors="*{priority}">Error</div>
+              </div>
+            </div>
+
+            <!-- Location & Department -->
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label class="form-label" for="location">Campus Location <span>*</span></label>
+                <input type="text" id="location" class="form-control"
+                       th:field="*{location}"
+                       placeholder="e.g. Block A, Room 204" required />
+                <div class="form-error" th:if="${#fields.hasErrors('location')}"
+                     th:errors="*{location}">Error</div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="departmentId">Department</label>
+                <select id="departmentId" class="form-control" th:field="*{departmentId}">
+                  <option value="">Select department (optional)</option>
+                  <option th:each="dept : ${departments}" th:value="${dept.id}"
+                          th:text="${dept.name}">Department</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Description -->
+            <div class="form-group">
+              <label class="form-label" for="description">Description <span>*</span></label>
+              <textarea id="description" class="form-control" th:field="*{description}"
+                        placeholder="Describe the issue in detail. Include when it started, how it affects you, and any steps already taken."
+                        rows="5" maxlength="2000"
+                        data-max-chars="2000" data-counter="desc-counter"
+                        required></textarea>
+              <div class="form-hint" id="desc-counter">2000 chars remaining</div>
+              <div class="form-error" th:if="${#fields.hasErrors('description')}"
+                   th:errors="*{description}">Error</div>
+            </div>
+
+            <!-- Image Upload -->
+            <div class="form-group">
+              <label class="form-label" for="imageUpload">Attach Photo (Optional)</label>
+              <input type="file" id="imageUpload" class="form-control"
+                     name="image" accept="image/*" />
+              <div class="form-hint">Max 5MB. JPG, PNG, GIF, WEBP accepted.</div>
+              <img id="imagePreview" style="display:none;margin-top:10px;max-height:200px;border-radius:8px;border:1px solid var(--border);" alt="Preview" />
+            </div>
+
+            <!-- AI Hint -->
+            <div class="alert alert-info" style="margin-bottom:20px;">
+              <span class="alert-icon">💡</span>
+              <div class="alert-content">
+                <strong>Need help?</strong> Use the
+                <a th:href="@{/ai/assistant}">AI Complaint Assistant</a>
+                to improve your description, get category suggestions, or troubleshooting tips.
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+              <button type="submit" class="btn btn-primary btn-lg">
+                📤 Submit Complaint
+              </button>
+              <a th:href="@{/student/complaints}" class="btn btn-secondary btn-lg">
+                Cancel
+              </a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="en">
+<head th:replace="~{fragments/layout :: head(pageTitle='AI Complaint Assistant')}"></head>
+<body>
+<div class="layout">
+  <th:block th:replace="~{fragments/layout :: sidebar('ai')}"></th:block>
+  <div class="main-content">
+    <th:block th:replace="~{fragments/layout :: topbar('AI Complaint Assistant', 'Powered by Google Gemini')}"></th:block>
+
+    <div class="page-content">
+
+      <!-- AI Unavailable Banner -->
+      <div th:unless="${aiConfigured}" class="alert alert-warning mb-24">
+        <span class="alert-icon">🤖</span>
+        <div class="alert-content">
+          <div class="alert-title">AI Assistant Unavailable</div>
+          <p>The Gemini API key is not configured. Set the <code>GEMINI_API_KEY</code>
+             environment variable to enable AI features. All other features work normally.</p>
+        </div>
+      </div>
+
+      <div class="ai-panel">
+        <div class="ai-panel-header">
+          <h3>🤖 FixFlow AI Complaint Assistant</h3>
+          <p>Use AI to improve your complaints, get category suggestions, and troubleshooting guidance.</p>
+        </div>
+
+        <!-- Tabs -->
+        <div class="ai-tabs">
+          <button class="ai-tab active" data-tab="improve">✍️ Improve</button>
+          <button class="ai-tab" data-tab="category">🏷️ Category</button>
+          <button class="ai-tab" data-tab="priority">🎯 Priority</button>
+          <button class="ai-tab" data-tab="troubleshoot">🔍 Troubleshoot</button>
+          <button class="ai-tab" sec:authorize="hasRole('ADMIN')" data-tab="summary">📋 Summary</button>
+        </div>
+
+        <!-- Tab: Improve -->
+        <div id="tab-improve" class="ai-tab-content active">
+          <div class="form-group">
+            <label class="form-label">Your Draft Complaint</label>
+            <textarea id="ai-input-improve" class="form-control" rows="5"
+                      placeholder="Paste your complaint draft here. The AI will rewrite it clearly and professionally while preserving your intent."
+                      data-max-chars="4000" data-counter="improve-counter"></textarea>
+            <div class="form-hint" id="improve-counter">4000 chars remaining</div>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
+            <button class="btn btn-primary" data-ai-action="improve" th:disabled="${!aiConfigured}">
+              ✨ Improve Complaint
+            </button>
+            <button class="btn btn-secondary" onclick="AI.copyResult('improve')">📋 Copy Result</button>
+          </div>
+          <div id="ai-result-improve" class="ai-result">Result will appear here...</div>
+          <p class="form-hint mt-8">⚠ AI-generated text is a suggestion. Review it before submitting.</p>
+        </div>
+
+        <!-- Tab: Category -->
+        <div id="tab-category" class="ai-tab-content">
+          <div class="form-group">
+            <label class="form-label">Complaint Description</label>
+            <textarea id="ai-input-category" class="form-control" rows="4"
+                      placeholder="Describe the issue and the AI will suggest the best category."
+                      data-max-chars="4000" data-counter="cat-counter"></textarea>
+            <div class="form-hint" id="cat-counter">4000 chars remaining</div>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+            <button class="btn btn-primary" data-ai-action="category" th:disabled="${!aiConfigured}">
+              🏷️ Suggest Category
+            </button>
+            <button class="btn btn-secondary" onclick="AI.copyResult('category')">📋 Copy</button>
+          </div>
+          <div id="ai-result-category" class="ai-result">Result will appear here...</div>
+        </div>
+
+        <!-- Tab: Priority -->
+        <div id="tab-priority" class="ai-tab-content">
+          <div class="form-group">
+            <label class="form-label">Complaint Description</label>
+            <textarea id="ai-input-priority" class="form-control" rows="4"
+                      placeholder="Describe the issue and the AI will suggest an appropriate priority level."
+                      data-max-chars="4000" data-counter="pri-counter"></textarea>
+            <div class="form-hint" id="pri-counter">4000 chars remaining</div>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+            <button class="btn btn-primary" data-ai-action="priority" th:disabled="${!aiConfigured}">
+              🎯 Suggest Priority
+            </button>
+            <button class="btn btn-secondary" onclick="AI.copyResult('priority')">📋 Copy</button>
+          </div>
+          <div id="ai-result-priority" class="ai-result">Result will appear here...</div>
+          <p class="form-hint mt-8">⚠ Final priority must be confirmed by you or an administrator.</p>
+        </div>
+
+        <!-- Tab: Troubleshoot -->
+        <div id="tab-troubleshoot" class="ai-tab-content">
+          <div class="alert alert-warning mb-16">
+            <span class="alert-icon">⚠️</span>
+            <div class="alert-content">
+              <strong>Safety First:</strong> For electrical hazards, water near electrical equipment, or dangerous situations
+              — stay away and contact authorized maintenance staff immediately.
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Describe the Issue</label>
+            <textarea id="ai-input-troubleshoot" class="form-control" rows="4"
+                      placeholder="Describe the campus issue you're facing for safe troubleshooting suggestions."
+                      data-max-chars="4000" data-counter="ts-counter"></textarea>
+            <div class="form-hint" id="ts-counter">4000 chars remaining</div>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+            <button class="btn btn-primary" data-ai-action="troubleshoot" th:disabled="${!aiConfigured}">
+              🔍 Get Guidance
+            </button>
+            <button class="btn btn-secondary" onclick="AI.copyResult('troubleshoot')">📋 Copy</button>
+          </div>
+          <div id="ai-result-troubleshoot" class="ai-result">Result will appear here...</div>
+        </div>
+
+        <!-- Tab: Admin Summary (Admin only) -->
+        <div id="tab-summary" class="ai-tab-content" sec:authorize="hasRole('ADMIN')">
+          <div class="form-group">
+            <label class="form-label">Complaint ID</label>
+            <input type="text" id="ai-complaint-id" class="form-control"
+                   placeholder="e.g. FF-1001" style="max-width:200px;" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Or paste complaint description</label>
+            <textarea id="ai-input-summary" class="form-control" rows="4"
+                      placeholder="Enter complaint ID above OR paste description here."
+                      data-max-chars="4000" data-counter="sum-counter"></textarea>
+            <div class="form-hint" id="sum-counter">4000 chars remaining</div>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+            <button class="btn btn-primary" data-ai-action="summary" th:disabled="${!aiConfigured}">
+              📋 Generate Summary
+            </button>
+            <button class="btn btn-secondary" onclick="AI.copyResult('summary')">📋 Copy</button>
+          </div>
+          <div id="ai-result-summary" class="ai-result">Result will appear here...</div>
+          <p class="form-hint mt-8">⚠ AI suggestions do not automatically change complaint status or assignments.</p>
+        </div>
+
+      </div><!-- /ai-panel -->
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

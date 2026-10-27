@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head(pageTitle='Manage Complaint')}"></head>
+<body>
+<div class="layout">
+  <th:block th:replace="~{fragments/layout :: sidebar('complaints')}"></th:block>
+  <div class="main-content">
+    <th:block th:replace="~{fragments/layout :: topbar('Manage Complaint', ${complaint.complaintId})}"></th:block>
+
+    <div class="page-content">
+      <div th:if="${successMsg}" th:data-toast-success="${successMsg}" style="display:none"></div>
+      <div th:if="${errorMsg}"   th:data-toast-error="${errorMsg}"   style="display:none"></div>
+
+      <div style="margin-bottom:16px;">
+        <a th:href="@{/admin/complaints}" class="btn btn-secondary btn-sm">← Back to All Complaints</a>
+      </div>
+
+      <!-- Complaint Header -->
+      <div class="complaint-header">
+        <div style="flex:1;">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
+            <span class="complaint-id" th:text="${complaint.complaintId}">FF-1001</span>
+            <span th:replace="~{fragments/layout :: statusBadge(${complaint.status})}"></span>
+            <span th:replace="~{fragments/layout :: priorityBadge(${complaint.priority})}"></span>
+            <span th:if="${complaint.overdue}" class="overdue-badge">⚠ OVERDUE</span>
+          </div>
+          <h1 style="font-size:20px;font-weight:700;" th:text="${complaint.title}">Title</h1>
+          <div class="complaint-meta">
+            <div class="meta-item">
+              <div class="meta-label">Category</div>
+              <div class="meta-value" th:text="${complaint.category}">Cat</div>
+            </div>
+            <div class="meta-item">
+              <div class="meta-label">Location</div>
+              <div class="meta-value">📍 <span th:text="${complaint.location}">Loc</span></div>
+            </div>
+            <div class="meta-item">
+              <div class="meta-label">Reporter</div>
+              <div class="meta-value" th:text="${complaint.reportedBy.fullName}">Student</div>
+            </div>
+            <div class="meta-item">
+              <div class="meta-label">Submitted</div>
+              <div class="meta-value" th:text="${#temporals.format(complaint.createdAt, 'dd MMM yyyy, HH:mm')}">Date</div>
+            </div>
+            <div class="meta-item" th:if="${complaint.assignedTo}">
+              <div class="meta-label">Assigned To</div>
+              <div class="meta-value" th:text="${complaint.assignedTo.fullName}">Staff</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 360px;gap:20px;" class="admin-detail-grid">
+        <!-- Left -->
+        <div>
+          <!-- Description -->
+          <div class="card mb-24">
+            <div class="card-header"><div class="card-title">📄 Description</div></div>
+            <div class="card-body">
+              <div class="complaint-description" th:text="${complaint.description}">Desc</div>
+            </div>
+          </div>
+
+          <!-- Image -->
+          <div th:if="${complaint.imagePath}" class="card mb-24">
+            <div class="card-header"><div class="card-title">📷 Attached Photo</div></div>
+            <div class="card-body" style="text-align:center;">
+              <img th:src="${complaint.imagePath}" alt="Complaint photo"
+                   style="max-width:100%;max-height:400px;border-radius:8px;" />
+            </div>
+          </div>
+
+          <!-- Admin Remarks -->
+          <div th:if="${complaint.adminRemarks}" class="card mb-24">
+            <div class="card-header"><div class="card-title">💬 Current Remarks</div></div>
+            <div class="card-body">
+              <div class="complaint-description" th:text="${complaint.adminRemarks}">Remarks</div>
+            </div>
+          </div>
+
+          <!-- Timeline -->
+          <div class="card">
+            <div class="card-header"><div class="card-title">📅 Status History</div></div>
+            <div class="card-body">
+              <div th:if="${#lists.isEmpty(history)}" class="text-muted text-sm">No history.</div>
+              <div class="timeline">
+                <div th:each="h : ${history}" class="timeline-item">
+                  <div class="timeline-dot"></div>
+                  <div class="timeline-content">
+                    <div class="timeline-header">
+                      <span class="timeline-actor"
+                            th:text="${h.changedBy != null ? h.changedBy.fullName : 'System'}">Actor</span>
+                      <span class="timeline-time"
+                            th:text="${#temporals.format(h.changedAt, 'dd MMM, HH:mm')}">Time</span>
+                    </div>
+                    <div class="timeline-status">
+                      <span th:if="${h.fromStatus}" class="badge badge-dot"
+                            th:classappend="'badge-' + ${#strings.toLowerCase(h.fromStatus.toString())}"
+                            th:text="${h.fromStatus}">From</span>
+                      <span th:if="${h.fromStatus}" class="timeline-arrow">→</span>
+                      <span class="badge badge-dot"
+                            th:classappend="'badge-' + ${#strings.toLowerCase(h.toStatus.toString())}"
+                            th:text="${h.toStatus}">To</span>
+                    </div>
+                    <div th:if="${h.remarks}" class="timeline-remark" th:text="${h.remarks}">Remarks</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Admin Actions -->
+        <div>
+          <!-- Assign Staff -->
+          <div class="card mb-20">
+            <div class="card-header"><div class="card-title">👷 Assign Staff</div></div>
+            <div class="card-body">
+              <form th:action="@{/admin/complaint/{id}/assign(id=${complaint.complaintId})}" method="post">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                <div class="form-group">
+                  <label class="form-label" for="staffId">Maintenance Staff</label>
+                  <select id="staffId" name="staffId" class="form-control" required>
+                    <option value="">Select staff member</option>
+                    <option th:each="s : ${staffList}"
+                            th:value="${s.id}"
+                            th:text="${s.fullName}"
+                            th:selected="${complaint.assignedTo != null and complaint.assignedTo.id == s.id}">
+                      Staff
+                    </option>
+                  </select>
+                </div>
+                <button type="submit" class="btn btn-primary w-full">Assign</button>
+              </form>
+            </div>
+          </div>
+
+          <!-- Update Status -->
+          <div class="card mb-20">
+            <div class="card-header"><div class="card-title">🔄 Update Status</div></div>
+            <div class="card-body">
+              <form th:action="@{/admin/complaint/{id}/status(id=${complaint.complaintId})}" method="post">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                <div class="form-group">
+                  <label class="form-label">New Status</label>
+                  <select name="status" class="form-control" required>
+                    <option value="">Select status</option>
+                    <option value="PENDING">Pending</option>
+                    <option value="ASSIGNED">Assigned</option>
+                    <option value="IN_PROGRESS">In Progress</option>
+                    <option value="RESOLVED">Resolved</option>
+                    <option value="REJECTED">Rejected</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Remarks (optional)</label>
+                  <textarea name="remarks" class="form-control" rows="3"
+                            placeholder="Add admin remarks..."
+                            th:text="${complaint.adminRemarks}"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary w-full">Update Status</button>
+              </form>
+            </div>
+          </div>
+
+          <!-- AI Summary -->
+          <div class="card">
+            <div class="card-header"><div class="card-title">🤖 AI Summary</div></div>
+            <div class="card-body">
+              <input type="hidden" id="ai-complaint-id" th:value="${complaint.complaintId}" />
+              <input type="hidden" id="ai-input-summary" th:value="${complaint.description}" />
+              <button class="btn btn-secondary w-full" data-ai-action="summary">
+                Generate AI Summary
+              </button>
+              <div id="ai-result-summary" class="ai-result" style="margin-top:12px;min-height:60px;font-size:13px;">
+                Click the button to generate an AI summary.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+<style>
+  @media(max-width:900px){ .admin-detail-grid { grid-template-columns: 1fr !important; } }
+</style>
+</body>
+</html>

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="en">
+<head th:replace="~{fragments/layout :: head(pageTitle='Admin Dashboard')}"></head>
+<body>
+<div class="layout">
+  <th:block th:replace="~{fragments/layout :: sidebar('dashboard')}"></th:block>
+  <div class="main-content">
+    <th:block th:replace="~{fragments/layout :: topbar('Admin Dashboard', 'Campus Operations Overview')}"></th:block>
+
+    <div class="page-content">
+      <!-- Stats Grid -->
+      <div class="stats-grid">
+        <div class="stat-card" style="--stat-color:#2563eb;--stat-bg:#dbeafe;">
+          <div class="stat-info">
+            <div class="stat-value" th:text="${stats.totalComplaints}">0</div>
+            <div class="stat-label">Total Complaints</div>
+          </div>
+          <div class="stat-icon">📋</div>
+        </div>
+        <div class="stat-card" style="--stat-color:#f59e0b;--stat-bg:#fef3c7;">
+          <div class="stat-info">
+            <div class="stat-value" th:text="${stats.pendingComplaints}">0</div>
+            <div class="stat-label">Pending</div>
+          </div>
+          <div class="stat-icon">⏳</div>
+        </div>
+        <div class="stat-card" style="--stat-color:#8b5cf6;--stat-bg:#ede9fe;">
+          <div class="stat-info">
+            <div class="stat-value" th:text="${stats.inProgressComplaints}">0</div>
+            <div class="stat-label">In Progress</div>
+          </div>
+          <div class="stat-icon">🔧</div>
+        </div>
+        <div class="stat-card" style="--stat-color:#10b981;--stat-bg:#d1fae5;">
+          <div class="stat-info">
+            <div class="stat-value" th:text="${stats.resolvedComplaints}">0</div>
+            <div class="stat-label">Resolved</div>
+          </div>
+          <div class="stat-icon">✅</div>
+        </div>
+        <div class="stat-card" style="--stat-color:#ef4444;--stat-bg:#fee2e2;">
+          <div class="stat-info">
+            <div class="stat-value" th:text="${stats.overdueComplaints}">0</div>
+            <div class="stat-label">Overdue</div>
+          </div>
+          <div class="stat-icon">⚠️</div>
+        </div>
+        <div class="stat-card" style="--stat-color:#0ea5e9;--stat-bg:#e0f2fe;">
+          <div class="stat-info">
+            <div class="stat-value"
+                 th:text="${stats.avgResolutionHours != null ? #numbers.formatDecimal(stats.avgResolutionHours, 1, 1) + 'h' : 'N/A'}">N/A</div>
+            <div class="stat-label">Avg Resolution Time</div>
+          </div>
+          <div class="stat-icon">⏱️</div>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="charts-grid">
+        <div class="chart-card">
+          <div class="chart-title">📊 Complaints by Category</div>
+          <canvas id="categoryChart" height="260"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">📈 Status Distribution</div>
+          <canvas id="statusChart" height="260"></canvas>
+        </div>
+      </div>
+
+      <!-- Overdue Alert -->
+      <div th:if="${!#lists.isEmpty(overdueComplaints)}" class="alert alert-danger mb-24">
+        <span class="alert-icon">🚨</span>
+        <div class="alert-content">
+          <div class="alert-title" th:text="${overdueComplaints.size()} + ' Overdue Complaint(s) Require Immediate Attention'"></div>
+          <a th:href="@{/admin/overdue}" class="btn btn-danger btn-sm" style="margin-top:8px;">View Overdue</a>
+        </div>
+      </div>
+
+      <!-- Recent Complaints -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🕐 Recent Complaints</div>
+          <a th:href="@{/admin/complaints}" class="btn btn-secondary btn-sm">View All</a>
+        </div>
+        <div th:if="${#lists.isEmpty(recentComplaints)}" class="empty-state">
+          <div class="empty-icon">📭</div>
+          <div class="empty-title">No complaints yet</div>
+        </div>
+        <div th:unless="${#lists.isEmpty(recentComplaints)}" class="table-wrapper">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>ID</th><th>Title</th><th>Category</th><th>Priority</th>
+                <th>Status</th><th>Reporter</th><th>Date</th><th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="c : ${recentComplaints}" th:classappend="${c.overdue} ? 'overdue-row'">
+                <td>
+                  <span class="complaint-id" th:text="${c.complaintId}">FF-1001</span>
+                  <span th:if="${c.overdue}" class="overdue-badge" style="display:flex;margin-top:3px;">⚠</span>
+                </td>
+                <td class="title-cell">
+                  <div class="title" th:text="${c.title}">Title</div>
+                  <div class="location">📍 <span th:text="${c.location}">Loc</span></div>
+                </td>
+                <td th:text="${c.category}" style="font-size:12px;"></td>
+                <td><span th:replace="~{fragments/layout :: priorityBadge(${c.priority})}"></span></td>
+                <td><span th:replace="~{fragments/layout :: statusBadge(${c.status})}"></span></td>
+                <td style="font-size:12px;" th:text="${c.reportedBy.fullName}">Student</td>
+                <td style="font-size:12px;white-space:nowrap;"
+                    th:text="${#temporals.format(c.createdAt, 'dd MMM yyyy')}">Date</td>
+                <td>
+                  <a th:href="@{/admin/complaint/{id}(id=${c.complaintId})}"
+                     class="btn btn-sm btn-secondary">Manage</a>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /page-content -->
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+
+<script th:inline="javascript">
+  const categoryData = /*[[${stats.categoryStats}]]*/ [];
+  const statusData   = /*[[${stats.statusStats}]]*/ [];
+  document.addEventListener('DOMContentLoaded', () => initDashboardCharts(categoryData, statusData));
+</script>
+</body>
+</html>

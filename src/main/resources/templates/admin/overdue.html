@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head(pageTitle='Overdue Complaints')}"></head>
+<body>
+<div class="layout">
+  <th:block th:replace="~{fragments/layout :: sidebar('overdue')}"></th:block>
+  <div class="main-content">
+    <th:block th:replace="~{fragments/layout :: topbar('⚠ Overdue Complaints', 'Complaints exceeding their SLA threshold')}"></th:block>
+
+    <div class="page-content">
+      <div th:if="${#lists.isEmpty(complaints)}" class="card">
+        <div class="empty-state">
+          <div class="empty-icon">🎉</div>
+          <div class="empty-title">No Overdue Complaints!</div>
+          <div class="empty-sub">All complaints are within their service level thresholds. Great job!</div>
+        </div>
+      </div>
+
+      <div th:unless="${#lists.isEmpty(complaints)}" class="card">
+        <div class="card-header">
+          <div class="card-title" style="color:var(--danger);">
+            🚨 <span th:text="${complaints.size()} + ' Overdue Complaint(s)'"></span>
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>ID</th><th>Title</th><th>Priority</th><th>Status</th>
+                <th>Reporter</th><th>Submitted</th><th>Hours Elapsed</th><th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="c : ${complaints}" class="overdue-row">
+                <td>
+                  <span class="complaint-id" th:text="${c.complaintId}">FF-1001</span>
+                  <span class="overdue-badge" style="display:flex;margin-top:3px;">⚠ OVERDUE</span>
+                </td>
+                <td class="title-cell">
+                  <div class="title" th:text="${c.title}">Title</div>
+                  <div class="location">📍 <span th:text="${c.location}">Loc</span></div>
+                </td>
+                <td><span th:replace="~{fragments/layout :: priorityBadge(${c.priority})}"></span></td>
+                <td><span th:replace="~{fragments/layout :: statusBadge(${c.status})}"></span></td>
+                <td style="font-size:12px;" th:text="${c.reportedBy.fullName}">Student</td>
+                <td style="font-size:12px;white-space:nowrap;"
+                    th:text="${#temporals.format(c.createdAt, 'dd MMM yyyy, HH:mm')}">Date</td>
+                <td>
+                  <span style="font-weight:700;color:var(--danger);"
+                        th:text="${#numbers.formatDecimal(
+                          T(java.time.Duration).between(c.createdAt, T(java.time.LocalDateTime).now()).toHours(),
+                          1, 0) + 'h'}">
+                    Xh
+                  </span>
+                </td>
+                <td>
+                  <a th:href="@{/admin/complaint/{id}(id=${c.complaintId})}"
+                     class="btn btn-sm btn-primary">Manage</a>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

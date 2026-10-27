@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head(pageTitle='My Complaints')}"></head>
+<body>
+<div class="layout">
+  <th:block th:replace="~{fragments/layout :: sidebar('complaints')}"></th:block>
+  <div class="main-content">
+    <th:block th:replace="~{fragments/layout :: topbar('My Complaints', 'Track your submitted complaints')}"></th:block>
+
+    <div class="page-content">
+      <div th:if="${successMsg}" th:data-toast-success="${successMsg}" style="display:none"></div>
+      <div th:if="${errorMsg}"   th:data-toast-error="${errorMsg}"   style="display:none"></div>
+
+      <div class="page-header">
+        <div>
+          <div class="page-header-title">My Complaints</div>
+          <div class="page-header-subtitle" th:text="${complaints.size()} + ' complaint(s) submitted'"></div>
+        </div>
+        <a th:href="@{/student/complaint/new}" class="btn btn-primary">➕ New Complaint</a>
+      </div>
+
+      <!-- Empty State -->
+      <div th:if="${#lists.isEmpty(complaints)}" class="card">
+        <div class="empty-state">
+          <div class="empty-icon">📭</div>
+          <div class="empty-title">No complaints yet</div>
+          <div class="empty-sub">You haven't submitted any complaints. Submit one to get started.</div>
+          <div class="empty-action">
+            <a th:href="@{/student/complaint/new}" class="btn btn-primary">Submit a Complaint</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Complaints Table -->
+      <div th:unless="${#lists.isEmpty(complaints)}" class="card">
+        <div class="table-wrapper">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Title / Location</th>
+                <th>Category</th>
+                <th>Priority</th>
+                <th>Status</th>
+                <th>Assigned To</th>
+                <th>Submitted</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="c : ${complaints}" th:classappend="${c.overdue} ? 'overdue-row'">
+                <td>
+                  <span class="complaint-id" th:text="${c.complaintId}">FF-1001</span>
+                  <span th:if="${c.overdue}" class="overdue-badge" style="display:flex;margin-top:4px;">⚠ Overdue</span>
+                </td>
+                <td class="title-cell">
+                  <div class="title" th:text="${c.title}">Title</div>
+                  <div class="location">📍 <span th:text="${c.location}">Location</span></div>
+                </td>
+                <td><span th:text="${c.category}" style="font-size:12px;">Cat</span></td>
+                <td><span th:replace="~{fragments/layout :: priorityBadge(${c.priority})}"></span></td>
+                <td><span th:replace="~{fragments/layout :: statusBadge(${c.status})}"></span></td>
+                <td>
+                  <span th:if="${c.assignedTo}" th:text="${c.assignedTo.fullName}"
+                        style="font-size:12px;color:var(--text-muted);">Staff</span>
+                  <span th:unless="${c.assignedTo}" style="color:var(--text-light);font-size:12px;">—</span>
+                </td>
+                <td style="font-size:12px;white-space:nowrap;"
+                    th:text="${#temporals.format(c.createdAt, 'dd MMM yyyy')}">Date</td>
+                <td>
+                  <div style="display:flex;gap:6px;">
+                    <a th:href="@{/student/complaint/{id}(id=${c.complaintId})}"
+                       class="btn btn-sm btn-secondary">View</a>
+                    <form th:if="${c.status.name() == 'PENDING'}"
+                          th:action="@{/student/complaint/{id}/cancel(id=${c.complaintId})}"
+                          method="post" style="display:inline;"
+                          th:id="'cancel-form-' + ${c.complaintId}">
+                      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                     <button type="button"
+                            class="btn btn-sm btn-danger"
+                            th:attr="data-form-id='cancel-form-' + ${c.complaintId}"
+                            onclick="confirmAction('Cancel this complaint?', this.dataset.formId)">
+                         Cancel
+                     </button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <th:block th:fragment="head(pageTitle)">
+    <title th:text="${pageTitle} + ' — FixFlow'">FixFlow</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔧</text></svg>" />
+    <meta th:if="${_csrf}" name="_csrf"        th:content="${_csrf.token}" />
+    <meta th:if="${_csrf}" name="_csrf_header" th:content="${_csrf.headerName}" />
+  </th:block>
+</head>
+<body>
+
+<!-- ====================================================
+     SIDEBAR FRAGMENT
+     ==================================================== -->
+<nav id="sidebar" class="sidebar" th:fragment="sidebar(active)">
+  <div class="sidebar-logo">
+    <div class="sidebar-logo-icon">🔧</div>
+    <div class="sidebar-logo-text">
+      <span class="brand">FixFlow</span>
+      <span class="tagline">CAMPUS OPERATIONS</span>
+    </div>
+  </div>
+
+  <div class="sidebar-nav">
+
+    <!-- STUDENT NAV -->
+    <th:block sec:authorize="hasRole('STUDENT')">
+      <span class="sidebar-section-label">Student</span>
+      <a th:href="@{/student/dashboard}" th:classappend="${active=='dashboard'} ? 'active'">
+        <span class="nav-icon">🏠</span> Dashboard
+      </a>
+      <a th:href="@{/student/complaints}" th:classappend="${active=='complaints'} ? 'active'">
+        <span class="nav-icon">📋</span> My Complaints
+      </a>
+      <a th:href="@{/student/complaint/new}" th:classappend="${active=='new'} ? 'active'">
+        <span class="nav-icon">➕</span> Submit Complaint
+      </a>
+      <span class="sidebar-section-label">Tools</span>
+      <a th:href="@{/ai/assistant}" th:classappend="${active=='ai'} ? 'active'">
+        <span class="nav-icon">🤖</span> AI Assistant
+      </a>
+    </th:block>
+
+    <!-- ADMIN NAV -->
+    <th:block sec:authorize="hasRole('ADMIN')">
+      <span class="sidebar-section-label">Admin</span>
+      <a th:href="@{/admin/dashboard}" th:classappend="${active=='dashboard'} ? 'active'">
+        <span class="nav-icon">📊</span> Dashboard
+      </a>
+      <a th:href="@{/admin/complaints}" th:classappend="${active=='complaints'} ? 'active'">
+        <span class="nav-icon">📋</span> All Complaints
+      </a>
+      <a th:href="@{/admin/overdue}" th:classappend="${active=='overdue'} ? 'active'">
+        <span class="nav-icon">⚠️</span> Overdue
+      </a>
+      <a th:href="@{/admin/departments}" th:classappend="${active=='departments'} ? 'active'">
+        <span class="nav-icon">🏢</span> Departments
+      </a>
+      <span class="sidebar-section-label">Tools</span>
+      <a th:href="@{/ai/assistant}" th:classappend="${active=='ai'} ? 'active'">
+        <span class="nav-icon">🤖</span> AI Assistant
+      </a>
+    </th:block>
+
+    <!-- STAFF NAV -->
+    <th:block sec:authorize="hasRole('MAINTENANCE_STAFF')">
+      <span class="sidebar-section-label">Staff</span>
+      <a th:href="@{/staff/dashboard}" th:classappend="${active=='dashboard'} ? 'active'">
+        <span class="nav-icon">🏠</span> Dashboard
+      </a>
+    </th:block>
+
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="sidebar-user">
+      <div class="sidebar-user-avatar" sec:authentication="name" th:text="${#strings.substring(#authentication.name, 0, 1).toUpperCase()}">A</div>
+      <div class="sidebar-user-info">
+        <div class="name" sec:authentication="name">User</div>
+        <div class="role">
+          <span sec:authorize="hasRole('ADMIN')">Administrator</span>
+          <span sec:authorize="hasRole('STUDENT')">Student</span>
+          <span sec:authorize="hasRole('MAINTENANCE_STAFF')">Maintenance Staff</span>
+        </div>
+      </div>
+    </div>
+    <form th:action="@{/logout}" method="post">
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+      <button class="sidebar-logout" type="submit">
+        <span>🚪</span> Sign Out
+      </button>
+    </form>
+  </div>
+</nav>
+
+<!-- ====================================================
+     TOPBAR FRAGMENT
+     ==================================================== -->
+<header class="topbar" th:fragment="topbar(title, subtitle)">
+  <button id="sidebar-toggle" class="btn btn-secondary btn-icon" style="display:none; margin-right:8px;" aria-label="Menu">☰</button>
+  <div>
+    <div class="topbar-title" th:text="${title}">Page Title</div>
+    <div class="topbar-subtitle" th:text="${subtitle}" th:if="${subtitle}">Subtitle</div>
+  </div>
+  <div class="topbar-actions">
+    <span class="topbar-badge" style="background:var(--primary-light);color:var(--primary);">
+      🎓 FixFlow v1.0
+    </span>
+  </div>
+</header>
+
+<!-- ====================================================
+     ALERT FRAGMENTS
+     ==================================================== -->
+<div th:fragment="alerts">
+  <div th:if="${successMsg}" class="alert alert-success" data-auto-dismiss="true"
+       th:data-toast-success="${successMsg}">
+    <span class="alert-icon">✅</span>
+    <div class="alert-content" th:text="${successMsg}"></div>
+  </div>
+  <div th:if="${errorMsg}" class="alert alert-danger"
+       th:data-toast-error="${errorMsg}">
+    <span class="alert-icon">❌</span>
+    <div class="alert-content" th:text="${errorMsg}"></div>
+  </div>
+  <!-- Flash attributes via model -->
+  <div th:if="${#maps.containsKey(flashAttributes, 'successMsg')}"
+       th:data-toast-success="${flashAttributes.successMsg}" style="display:none"></div>
+</div>
+
+<!-- ====================================================
+     STATUS BADGE FRAGMENT
+     ==================================================== -->
+<span th:fragment="statusBadge(status)" class="badge badge-dot"
+      th:classappend="'badge-' + ${#strings.toLowerCase(status.toString())}">
+  <th:block th:switch="${status.toString()}">
+    <span th:case="'PENDING'">Pending</span>
+    <span th:case="'ASSIGNED'">Assigned</span>
+    <span th:case="'IN_PROGRESS'">In Progress</span>
+    <span th:case="'RESOLVED'">Resolved</span>
+    <span th:case="'REJECTED'">Rejected</span>
+    <span th:case="'CANCELLED'">Cancelled</span>
+    <span th:case="*" th:text="${status}"></span>
+  </th:block>
+</span>
+
+<!-- ====================================================
+     PRIORITY BADGE FRAGMENT
+     ==================================================== -->
+<span th:fragment="priorityBadge(priority)" class="badge"
+      th:classappend="'badge-' + ${#strings.toLowerCase(priority.toString())}">
+  <th:block th:switch="${priority.toString()}">
+    <span th:case="'CRITICAL'">🔴 Critical</span>
+    <span th:case="'HIGH'">🟠 High</span>
+    <span th:case="'MEDIUM'">🟡 Medium</span>
+    <span th:case="'LOW'">🟢 Low</span>
+    <span th:case="*" th:text="${priority}"></span>
+  </th:block>
+</span>
+
+<!-- Scripts -->
+<th:block th:fragment="scripts">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script th:src="@{/js/app.js}"></script>
+</th:block>
+
+</body>
+</html>

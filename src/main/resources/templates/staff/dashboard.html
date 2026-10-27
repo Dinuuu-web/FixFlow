@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head(pageTitle='Staff Dashboard')}"></head>
+<body>
+<div class="layout">
+  <th:block th:replace="~{fragments/layout :: sidebar('dashboard')}"></th:block>
+  <div class="main-content">
+    <th:block th:replace="~{fragments/layout :: topbar('Staff Dashboard', 'Manage your assigned complaints')}"></th:block>
+
+    <div class="page-content">
+      <div th:if="${successMsg}" th:data-toast-success="${successMsg}" style="display:none"></div>
+      <div th:if="${errorMsg}"   th:data-toast-error="${errorMsg}"   style="display:none"></div>
+
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-card" style="--stat-color:#3b82f6;--stat-bg:#dbeafe;">
+          <div class="stat-info">
+            <div class="stat-value" th:text="${pendingCount}">0</div>
+            <div class="stat-label">Assigned to Me</div>
+          </div>
+          <div class="stat-icon">📥</div>
+        </div>
+        <div class="stat-card" style="--stat-color:#8b5cf6;--stat-bg:#ede9fe;">
+          <div class="stat-info">
+            <div class="stat-value" th:text="${inProgressCount}">0</div>
+            <div class="stat-label">In Progress</div>
+          </div>
+          <div class="stat-icon">🔧</div>
+        </div>
+        <div class="stat-card" style="--stat-color:#10b981;--stat-bg:#d1fae5;">
+          <div class="stat-info">
+            <div class="stat-value" th:text="${resolvedCount}">0</div>
+            <div class="stat-label">Resolved</div>
+          </div>
+          <div class="stat-icon">✅</div>
+        </div>
+      </div>
+
+      <!-- Complaints Table -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📋 My Assigned Complaints</div>
+        </div>
+        <div th:if="${#lists.isEmpty(complaints)}" class="empty-state">
+          <div class="empty-icon">🎉</div>
+          <div class="empty-title">No Complaints Assigned</div>
+          <div class="empty-sub">You have no complaints assigned to you at this time.</div>
+        </div>
+        <div th:unless="${#lists.isEmpty(complaints)}" class="table-wrapper">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>ID</th><th>Title / Location</th><th>Category</th><th>Priority</th>
+                <th>Status</th><th>Assigned Date</th><th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="c : ${complaints}" th:classappend="${c.overdue} ? 'overdue-row'">
+                <td>
+                  <span class="complaint-id" th:text="${c.complaintId}">FF-1001</span>
+                  <span th:if="${c.overdue}" class="overdue-badge" style="display:flex;margin-top:3px;">⚠ Overdue</span>
+                </td>
+                <td class="title-cell">
+                  <div class="title" th:text="${c.title}">Title</div>
+                  <div class="location">📍 <span th:text="${c.location}">Location</span></div>
+                </td>
+                <td style="font-size:12px;" th:text="${c.category}">Cat</td>
+                <td><span th:replace="~{fragments/layout :: priorityBadge(${c.priority})}"></span></td>
+                <td><span th:replace="~{fragments/layout :: statusBadge(${c.status})}"></span></td>
+                <td style="font-size:12px;white-space:nowrap;"
+                    th:text="${#temporals.format(c.updatedAt, 'dd MMM yyyy')}">Date</td>
+                <td>
+                  <a th:href="@{/staff/complaint/{id}(id=${c.complaintId})}"
+                     class="btn btn-sm btn-primary">View & Update</a>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>
